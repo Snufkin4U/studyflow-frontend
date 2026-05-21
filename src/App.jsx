@@ -5,6 +5,7 @@ function App() {
   const [summary, setSummary] = useState(null);
   const [tasks, setTasks] = useState([]);
   const [courses, setCourses] = useState([]);
+  const [courseProgress, setCourseProgress] = useState([]);
 
   const [newCourse, setNewCourse] = useState({
     name: "",
@@ -40,7 +41,48 @@ function App() {
     fetch("http://localhost:8080/api/courses")
       .then((response) => response.json())
       .then((data) => setCourses(data));
+
+    fetch("http://localhost:8080/api/dashboard/courses")
+      .then((response) => response.json())
+      .then((data) => setCourseProgress(data));
   };
+
+<section className="course-progress-section">
+  <h2>Course Progress</h2>
+
+  <div className="course-progress-grid">
+    {courseProgress.map((course) => (
+      <div className="course-progress-card" key={course.courseId}>
+        <h3>{course.courseName}</h3>
+
+        <p>
+          <strong>Total Tasks:</strong> {course.totalTasks}
+        </p>
+
+        <p>
+          <strong>Open Tasks:</strong> {course.openTasks}
+        </p>
+
+        <p>
+          <strong>Done Tasks:</strong> {course.doneTasks}
+        </p>
+
+        <p>
+          <strong>Remaining Hours:</strong> {course.remainingEstimatedHours}
+        </p>
+
+        <div className="progress-bar">
+          <div
+            className="progress-fill"
+            style={{ width: `${course.completionPercentage}%` }}
+          ></div>
+        </div>
+
+        <p>{course.completionPercentage.toFixed(1)}% completed</p>
+      </div>
+    ))}
+  </div>
+</section>
 
   useEffect(() => {
     loadDashboard();

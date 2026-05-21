@@ -54,3 +54,18 @@ h1 {
 .task-card h3 {
   margin-top: 0;
 }
+
+button {
+  margin-top: 12px;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  background: #24292f;
+  color: white;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+button:hover {
+  background: #444c56;
+}

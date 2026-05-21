@@ -5,15 +5,40 @@ function App() {
   const [summary, setSummary] = useState(null);
   const [tasks, setTasks] = useState([]);
 
-  useEffect(() => {
+  const loadDashboard = () => {
     fetch("http://localhost:8080/api/dashboard/summary")
       .then((response) => response.json())
       .then((data) => setSummary(data));
 
-    fetch("http://localhost:8080/api/tasks?size=5&sortBy=deadline&direction=asc")
+    fetch("http://localhost:8080/api/tasks?size=20&sortBy=deadline&direction=asc")
       .then((response) => response.json())
-      .then((data) => setTasks(data.content));
+      .then((data) => {
+        const openTasks = data.content
+          .filter((task) => task.status !== "DONE")
+          .slice(0, 5);
+
+        setTasks(openTasks);
+      });
+  };
+
+  useEffect(() => {
+    loadDashboard();
   }, []);
+
+  const markTaskAsDone = (taskId) => {
+    fetch(`http://localhost:8080/api/tasks/${taskId}/status?status=DONE`, {
+      method: "PUT",
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Failed to update task status");
+        }
+
+        return response.json();
+      })
+      .then(() => loadDashboard())
+      .catch((error) => console.error(error));
+  };
 
   return (
     <div className="app">
@@ -44,16 +69,26 @@ function App() {
         </div>
       )}
 
-      <h2>Upcoming Tasks</h2>
+      <h2>Upcoming Open Tasks</h2>
 
       <div className="task-list">
         {tasks.map((task) => (
           <div className="task-card" key={task.id}>
             <h3>{task.title}</h3>
             <p>{task.description}</p>
-            <p><strong>Course:</strong> {task.courseName}</p>
-            <p><strong>Deadline:</strong> {task.deadline}</p>
-            <p><strong>Status:</strong> {task.status}</p>
+            <p>
+              <strong>Course:</strong> {task.courseName}
+            </p>
+            <p>
+              <strong>Deadline:</strong> {task.deadline}
+            </p>
+            <p>
+              <strong>Status:</strong> {task.status}
+            </p>
+
+            <button onClick={() => markTaskAsDone(task.id)}>
+              Mark as Done
+            </button>
           </div>
         ))}
       </div>

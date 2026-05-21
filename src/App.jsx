@@ -4,6 +4,17 @@ import "./App.css";
 function App() {
   const [summary, setSummary] = useState(null);
   const [tasks, setTasks] = useState([]);
+  const [courses, setCourses] = useState([]);
+
+  const [newTask, setNewTask] = useState({
+    title: "",
+    description: "",
+    deadline: "",
+    estimatedHours: 1,
+    priority: 3,
+    status: "TODO",
+    courseId: "",
+  });
 
   const loadDashboard = () => {
     fetch("http://localhost:8080/api/dashboard/summary")
@@ -19,11 +30,64 @@ function App() {
 
         setTasks(openTasks);
       });
+
+    fetch("http://localhost:8080/api/courses")
+      .then((response) => response.json())
+      .then((data) => setCourses(data));
   };
 
   useEffect(() => {
     loadDashboard();
   }, []);
+
+  const handleInputChange = (event) => {
+    const { name, value } = event.target;
+
+    setNewTask({
+      ...newTask,
+      [name]: value,
+    });
+  };
+
+  const createTask = (event) => {
+    event.preventDefault();
+
+    const taskToCreate = {
+      ...newTask,
+      estimatedHours: Number(newTask.estimatedHours),
+      priority: Number(newTask.priority),
+      courseId: Number(newTask.courseId),
+    };
+
+    fetch("http://localhost:8080/api/tasks", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(taskToCreate),
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Failed to create task");
+        }
+
+        return response.json();
+      })
+      .then(() => {
+        setNewTask({
+          title: "",
+          description: "",
+          deadline: "",
+          estimatedHours: 1,
+          priority: 3,
+          status: "TODO",
+          courseId: "",
+        });
+
+        loadDashboard();
+      })
+      .catch((error) => console.error(error));
+  };
 
   const markTaskAsDone = (taskId) => {
     fetch(`http://localhost:8080/api/tasks/${taskId}/status?status=DONE`, {
@@ -82,6 +146,74 @@ function App() {
           </div>
         </div>
       )}
+
+      <section className="form-section">
+        <h2>Create New Task</h2>
+
+        <form onSubmit={createTask} className="task-form">
+          <input
+            name="title"
+            placeholder="Task title"
+            value={newTask.title}
+            onChange={handleInputChange}
+            required
+          />
+
+          <input
+            name="description"
+            placeholder="Description"
+            value={newTask.description}
+            onChange={handleInputChange}
+            required
+          />
+
+          <input
+            name="deadline"
+            type="date"
+            value={newTask.deadline}
+            onChange={handleInputChange}
+            required
+          />
+
+          <input
+            name="estimatedHours"
+            type="number"
+            min="0.5"
+            step="0.5"
+            placeholder="Estimated hours"
+            value={newTask.estimatedHours}
+            onChange={handleInputChange}
+            required
+          />
+
+          <input
+            name="priority"
+            type="number"
+            min="1"
+            max="5"
+            placeholder="Priority"
+            value={newTask.priority}
+            onChange={handleInputChange}
+            required
+          />
+
+          <select
+            name="courseId"
+            value={newTask.courseId}
+            onChange={handleInputChange}
+            required
+          >
+            <option value="">Select course</option>
+            {courses.map((course) => (
+              <option key={course.id} value={course.id}>
+                {course.name}
+              </option>
+            ))}
+          </select>
+
+          <button type="submit">Create Task</button>
+        </form>
+      </section>
 
       <h2>Upcoming Open Tasks</h2>
 

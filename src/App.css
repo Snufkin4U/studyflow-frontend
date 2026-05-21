@@ -83,3 +83,36 @@ button:hover {
 .delete-button:hover {
   background: #8f1d15;
 }
+
+.form-section {
+  margin-bottom: 40px;
+}
+
+.task-form {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.task-form input,
+.task-form select {
+  padding: 12px;
+  border: 1px solid #d0d7de;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.task-form button {
+  grid-column: span 2;
+}
+
+@media (max-width: 700px) {
+  .task-form {
+    grid-template-columns: 1fr;
+  }
+
+  .task-form button {
+    grid-column: span 1;
+  }
+}

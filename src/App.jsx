@@ -6,6 +6,12 @@ function App() {
   const [tasks, setTasks] = useState([]);
   const [courses, setCourses] = useState([]);
 
+  const [newCourse, setNewCourse] = useState({
+    name: "",
+    semester: "",
+    difficulty: 3,
+  });
+
   const [newTask, setNewTask] = useState({
     title: "",
     description: "",
@@ -40,13 +46,56 @@ function App() {
     loadDashboard();
   }, []);
 
-  const handleInputChange = (event) => {
+  const handleCourseInputChange = (event) => {
+    const { name, value } = event.target;
+
+    setNewCourse({
+      ...newCourse,
+      [name]: value,
+    });
+  };
+
+  const handleTaskInputChange = (event) => {
     const { name, value } = event.target;
 
     setNewTask({
       ...newTask,
       [name]: value,
     });
+  };
+
+  const createCourse = (event) => {
+    event.preventDefault();
+
+    const courseToCreate = {
+      ...newCourse,
+      difficulty: Number(newCourse.difficulty),
+    };
+
+    fetch("http://localhost:8080/api/courses", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(courseToCreate),
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Failed to create course");
+        }
+
+        return response.json();
+      })
+      .then(() => {
+        setNewCourse({
+          name: "",
+          semester: "",
+          difficulty: 3,
+        });
+
+        loadDashboard();
+      })
+      .catch((error) => console.error(error));
   };
 
   const createTask = (event) => {
@@ -148,6 +197,41 @@ function App() {
       )}
 
       <section className="form-section">
+        <h2>Create New Course</h2>
+
+        <form onSubmit={createCourse} className="task-form">
+          <input
+            name="name"
+            placeholder="Course name"
+            value={newCourse.name}
+            onChange={handleCourseInputChange}
+            required
+          />
+
+          <input
+            name="semester"
+            placeholder="Semester"
+            value={newCourse.semester}
+            onChange={handleCourseInputChange}
+            required
+          />
+
+          <input
+            name="difficulty"
+            type="number"
+            min="1"
+            max="5"
+            placeholder="Difficulty"
+            value={newCourse.difficulty}
+            onChange={handleCourseInputChange}
+            required
+          />
+
+          <button type="submit">Create Course</button>
+        </form>
+      </section>
+
+      <section className="form-section">
         <h2>Create New Task</h2>
 
         <form onSubmit={createTask} className="task-form">
@@ -155,7 +239,7 @@ function App() {
             name="title"
             placeholder="Task title"
             value={newTask.title}
-            onChange={handleInputChange}
+            onChange={handleTaskInputChange}
             required
           />
 
@@ -163,7 +247,7 @@ function App() {
             name="description"
             placeholder="Description"
             value={newTask.description}
-            onChange={handleInputChange}
+            onChange={handleTaskInputChange}
             required
           />
 
@@ -171,7 +255,7 @@ function App() {
             name="deadline"
             type="date"
             value={newTask.deadline}
-            onChange={handleInputChange}
+            onChange={handleTaskInputChange}
             required
           />
 
@@ -182,7 +266,7 @@ function App() {
             step="0.5"
             placeholder="Estimated hours"
             value={newTask.estimatedHours}
-            onChange={handleInputChange}
+            onChange={handleTaskInputChange}
             required
           />
 
@@ -193,14 +277,14 @@ function App() {
             max="5"
             placeholder="Priority"
             value={newTask.priority}
-            onChange={handleInputChange}
+            onChange={handleTaskInputChange}
             required
           />
 
           <select
             name="courseId"
             value={newTask.courseId}
-            onChange={handleInputChange}
+            onChange={handleTaskInputChange}
             required
           >
             <option value="">Select course</option>

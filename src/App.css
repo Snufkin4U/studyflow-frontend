@@ -157,3 +157,59 @@ button:hover {
     grid-template-columns: 1fr;
   }
 }
+
+.alert {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  margin-bottom: 24px;
+  font-weight: 600;
+}
+
+.alert-success {
+  background: #ecfdf3;
+  color: #027a48;
+  border: 1px solid #abefc6;
+}
+
+.alert-error {
+  background: #fef3f2;
+  color: #b42318;
+  border: 1px solid #fecdca;
+}
+
+.alert-close-button {
+  margin-top: 0;
+  padding: 6px 10px;
+  background: transparent;
+  color: inherit;
+  border: 1px solid currentColor;
+  border-radius: 6px;
+}
+
+.alert-close-button:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.loading-message {
+  margin-bottom: 24px;
+  color: #555;
+  font-weight: 600;
+}
+
+button:disabled,
+input:disabled,
+select:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.card h2,
+.card p,
+.course-progress-card h3,
+.course-progress-card p {
+  color: #222;
+}

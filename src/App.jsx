@@ -1,11 +1,43 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import "./App.css";
+
+const API_BASE_URL = "http://localhost:8080/api";
+
+async function parseErrorResponse(response) {
+  try {
+    const errorData = await response.json();
+
+    if (errorData.errors) {
+      return Object.values(errorData.errors).join(", ");
+    }
+
+    if (errorData.message) {
+      return errorData.message;
+    }
+
+    if (errorData.error) {
+      return errorData.error;
+    }
+
+    return "Something went wrong";
+  } catch {
+    return "Something went wrong";
+  }
+}
 
 function App() {
   const [summary, setSummary] = useState(null);
   const [tasks, setTasks] = useState([]);
   const [courses, setCourses] = useState([]);
   const [courseProgress, setCourseProgress] = useState([]);
+
+  const [message, setMessage] = useState(null);
+
+  const [isLoadingDashboard, setIsLoadingDashboard] = useState(false);
+  const [isCreatingCourse, setIsCreatingCourse] = useState(false);
+  const [isCreatingTask, setIsCreatingTask] = useState(false);
+  const [updatingTaskId, setUpdatingTaskId] = useState(null);
+  const [deletingTaskId, setDeletingTaskId] = useState(null);
 
   const [newCourse, setNewCourse] = useState({
     name: "",
@@ -23,70 +55,76 @@ function App() {
     courseId: "",
   });
 
-  const loadDashboard = () => {
-    fetch("http://localhost:8080/api/dashboard/summary")
-      .then((response) => response.json())
-      .then((data) => setSummary(data));
-
-    fetch("http://localhost:8080/api/tasks?size=20&sortBy=deadline&direction=asc")
-      .then((response) => response.json())
-      .then((data) => {
-        const openTasks = data.content
-          .filter((task) => task.status !== "DONE")
-          .slice(0, 5);
-
-        setTasks(openTasks);
-      });
-
-    fetch("http://localhost:8080/api/courses")
-      .then((response) => response.json())
-      .then((data) => setCourses(data));
-
-    fetch("http://localhost:8080/api/dashboard/courses")
-      .then((response) => response.json())
-      .then((data) => setCourseProgress(data));
+  const showSuccess = (text) => {
+    setMessage({
+      type: "success",
+      text,
+    });
   };
 
-<section className="course-progress-section">
-  <h2>Course Progress</h2>
+  const showError = (text) => {
+    setMessage({
+      type: "error",
+      text,
+    });
+  };
 
-  <div className="course-progress-grid">
-    {courseProgress.map((course) => (
-      <div className="course-progress-card" key={course.courseId}>
-        <h3>{course.courseName}</h3>
+  const clearMessage = () => {
+    setMessage(null);
+  };
 
-        <p>
-          <strong>Total Tasks:</strong> {course.totalTasks}
-        </p>
+  const loadDashboard = useCallback(async () => {
+    setIsLoadingDashboard(true);
 
-        <p>
-          <strong>Open Tasks:</strong> {course.openTasks}
-        </p>
+    try {
+      const [summaryResponse, tasksResponse, coursesResponse, progressResponse] =
+        await Promise.all([
+          fetch(`${API_BASE_URL}/dashboard/summary`),
+          fetch(`${API_BASE_URL}/tasks?size=20&sortBy=deadline&direction=asc`),
+          fetch(`${API_BASE_URL}/courses`),
+          fetch(`${API_BASE_URL}/dashboard/courses`),
+        ]);
 
-        <p>
-          <strong>Done Tasks:</strong> {course.doneTasks}
-        </p>
+      if (!summaryResponse.ok) {
+        throw new Error("Failed to load dashboard summary");
+      }
 
-        <p>
-          <strong>Remaining Hours:</strong> {course.remainingEstimatedHours}
-        </p>
+      if (!tasksResponse.ok) {
+        throw new Error("Failed to load tasks");
+      }
 
-        <div className="progress-bar">
-          <div
-            className="progress-fill"
-            style={{ width: `${course.completionPercentage}%` }}
-          ></div>
-        </div>
+      if (!coursesResponse.ok) {
+        throw new Error("Failed to load courses");
+      }
 
-        <p>{course.completionPercentage.toFixed(1)}% completed</p>
-      </div>
-    ))}
-  </div>
-</section>
+      if (!progressResponse.ok) {
+        throw new Error("Failed to load course progress");
+      }
+
+      const summaryData = await summaryResponse.json();
+      const tasksData = await tasksResponse.json();
+      const coursesData = await coursesResponse.json();
+      const progressData = await progressResponse.json();
+
+      const openTasks = (tasksData.content ?? [])
+        .filter((task) => task.status !== "DONE")
+        .slice(0, 5);
+
+      setSummary(summaryData);
+      setTasks(openTasks);
+      setCourses(coursesData);
+      setCourseProgress(progressData);
+    } catch (error) {
+      console.error(error);
+      showError("Could not load dashboard data. Make sure the backend is running.");
+    } finally {
+      setIsLoadingDashboard(false);
+    }
+  }, []);
 
   useEffect(() => {
     loadDashboard();
-  }, []);
+  }, [loadDashboard]);
 
   const handleCourseInputChange = (event) => {
     const { name, value } = event.target;
@@ -106,42 +144,50 @@ function App() {
     });
   };
 
-  const createCourse = (event) => {
+  const createCourse = async (event) => {
     event.preventDefault();
+    clearMessage();
+    setIsCreatingCourse(true);
 
     const courseToCreate = {
       ...newCourse,
       difficulty: Number(newCourse.difficulty),
     };
 
-    fetch("http://localhost:8080/api/courses", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(courseToCreate),
-    })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error("Failed to create course");
-        }
+    try {
+      const response = await fetch(`${API_BASE_URL}/courses`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(courseToCreate),
+      });
 
-        return response.json();
-      })
-      .then(() => {
-        setNewCourse({
-          name: "",
-          semester: "",
-          difficulty: 3,
-        });
+      if (!response.ok) {
+        const errorMessage = await parseErrorResponse(response);
+        throw new Error(errorMessage);
+      }
 
-        loadDashboard();
-      })
-      .catch((error) => console.error(error));
+      setNewCourse({
+        name: "",
+        semester: "",
+        difficulty: 3,
+      });
+
+      await loadDashboard();
+      showSuccess("Course created successfully.");
+    } catch (error) {
+      console.error(error);
+      showError(error.message || "Failed to create course.");
+    } finally {
+      setIsCreatingCourse(false);
+    }
   };
 
-  const createTask = (event) => {
+  const createTask = async (event) => {
     event.preventDefault();
+    clearMessage();
+    setIsCreatingTask(true);
 
     const taskToCreate = {
       ...newTask,
@@ -150,69 +196,108 @@ function App() {
       courseId: Number(newTask.courseId),
     };
 
-    fetch("http://localhost:8080/api/tasks", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(taskToCreate),
-    })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error("Failed to create task");
-        }
+    try {
+      const response = await fetch(`${API_BASE_URL}/tasks`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(taskToCreate),
+      });
 
-        return response.json();
-      })
-      .then(() => {
-        setNewTask({
-          title: "",
-          description: "",
-          deadline: "",
-          estimatedHours: 1,
-          priority: 3,
-          status: "TODO",
-          courseId: "",
-        });
+      if (!response.ok) {
+        const errorMessage = await parseErrorResponse(response);
+        throw new Error(errorMessage);
+      }
 
-        loadDashboard();
-      })
-      .catch((error) => console.error(error));
+      setNewTask({
+        title: "",
+        description: "",
+        deadline: "",
+        estimatedHours: 1,
+        priority: 3,
+        status: "TODO",
+        courseId: "",
+      });
+
+      await loadDashboard();
+      showSuccess("Task created successfully.");
+    } catch (error) {
+      console.error(error);
+      showError(error.message || "Failed to create task.");
+    } finally {
+      setIsCreatingTask(false);
+    }
   };
 
-  const markTaskAsDone = (taskId) => {
-    fetch(`http://localhost:8080/api/tasks/${taskId}/status?status=DONE`, {
-      method: "PUT",
-    })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error("Failed to update task status");
-        }
+  const markTaskAsDone = async (taskId) => {
+    clearMessage();
+    setUpdatingTaskId(taskId);
 
-        return response.json();
-      })
-      .then(() => loadDashboard())
-      .catch((error) => console.error(error));
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/tasks/${taskId}/status?status=DONE`,
+        {
+          method: "PUT",
+        }
+      );
+
+      if (!response.ok) {
+        const errorMessage = await parseErrorResponse(response);
+        throw new Error(errorMessage);
+      }
+
+      await loadDashboard();
+      showSuccess("Task marked as done.");
+    } catch (error) {
+      console.error(error);
+      showError(error.message || "Failed to update task status.");
+    } finally {
+      setUpdatingTaskId(null);
+    }
   };
 
-  const deleteTask = (taskId) => {
-    fetch(`http://localhost:8080/api/tasks/${taskId}`, {
-      method: "DELETE",
-    })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error("Failed to delete task");
-        }
+  const deleteTask = async (taskId) => {
+    clearMessage();
+    setDeletingTaskId(taskId);
 
-        loadDashboard();
-      })
-      .catch((error) => console.error(error));
+    try {
+      const response = await fetch(`${API_BASE_URL}/tasks/${taskId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        const errorMessage = await parseErrorResponse(response);
+        throw new Error(errorMessage);
+      }
+
+      await loadDashboard();
+      showSuccess("Task deleted successfully.");
+    } catch (error) {
+      console.error(error);
+      showError(error.message || "Failed to delete task.");
+    } finally {
+      setDeletingTaskId(null);
+    }
   };
 
   return (
     <div className="app">
       <h1>StudyFlow</h1>
       <p className="subtitle">Smart academic planner dashboard</p>
+
+      {message && (
+        <div className={`alert alert-${message.type}`} role="alert">
+          <span>{message.text}</span>
+          <button className="alert-close-button" onClick={clearMessage}>
+            X
+          </button>
+        </div>
+      )}
+
+      {isLoadingDashboard && (
+        <p className="loading-message">Loading dashboard data...</p>
+      )}
 
       {summary && (
         <div className="cards">
@@ -238,6 +323,54 @@ function App() {
         </div>
       )}
 
+      <section className="course-progress-section">
+        <h2>Course Progress</h2>
+
+        {courseProgress.length === 0 && !isLoadingDashboard ? (
+          <p>No course progress data yet.</p>
+        ) : (
+          <div className="course-progress-grid">
+            {courseProgress.map((course) => {
+              const completionPercentage = Number(
+                course.completionPercentage ?? 0
+              );
+
+              return (
+                <div className="course-progress-card" key={course.courseId}>
+                  <h3>{course.courseName}</h3>
+
+                  <p>
+                    <strong>Total Tasks:</strong> {course.totalTasks}
+                  </p>
+
+                  <p>
+                    <strong>Open Tasks:</strong> {course.openTasks}
+                  </p>
+
+                  <p>
+                    <strong>Done Tasks:</strong> {course.doneTasks}
+                  </p>
+
+                  <p>
+                    <strong>Remaining Hours:</strong>{" "}
+                    {course.remainingEstimatedHours}
+                  </p>
+
+                  <div className="progress-bar">
+                    <div
+                      className="progress-fill"
+                      style={{ width: `${completionPercentage}%` }}
+                    ></div>
+                  </div>
+
+                  <p>{completionPercentage.toFixed(1)}% completed</p>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </section>
+
       <section className="form-section">
         <h2>Create New Course</h2>
 
@@ -247,6 +380,7 @@ function App() {
             placeholder="Course name"
             value={newCourse.name}
             onChange={handleCourseInputChange}
+            disabled={isCreatingCourse}
             required
           />
 
@@ -255,6 +389,7 @@ function App() {
             placeholder="Semester"
             value={newCourse.semester}
             onChange={handleCourseInputChange}
+            disabled={isCreatingCourse}
             required
           />
 
@@ -266,10 +401,13 @@ function App() {
             placeholder="Difficulty"
             value={newCourse.difficulty}
             onChange={handleCourseInputChange}
+            disabled={isCreatingCourse}
             required
           />
 
-          <button type="submit">Create Course</button>
+          <button type="submit" disabled={isCreatingCourse}>
+            {isCreatingCourse ? "Creating..." : "Create Course"}
+          </button>
         </form>
       </section>
 
@@ -282,6 +420,7 @@ function App() {
             placeholder="Task title"
             value={newTask.title}
             onChange={handleTaskInputChange}
+            disabled={isCreatingTask}
             required
           />
 
@@ -290,6 +429,7 @@ function App() {
             placeholder="Description"
             value={newTask.description}
             onChange={handleTaskInputChange}
+            disabled={isCreatingTask}
             required
           />
 
@@ -298,6 +438,7 @@ function App() {
             type="date"
             value={newTask.deadline}
             onChange={handleTaskInputChange}
+            disabled={isCreatingTask}
             required
           />
 
@@ -309,6 +450,7 @@ function App() {
             placeholder="Estimated hours"
             value={newTask.estimatedHours}
             onChange={handleTaskInputChange}
+            disabled={isCreatingTask}
             required
           />
 
@@ -320,6 +462,7 @@ function App() {
             placeholder="Priority"
             value={newTask.priority}
             onChange={handleTaskInputChange}
+            disabled={isCreatingTask}
             required
           />
 
@@ -327,9 +470,11 @@ function App() {
             name="courseId"
             value={newTask.courseId}
             onChange={handleTaskInputChange}
+            disabled={isCreatingTask}
             required
           >
             <option value="">Select course</option>
+
             {courses.map((course) => (
               <option key={course.id} value={course.id}>
                 {course.name}
@@ -337,38 +482,55 @@ function App() {
             ))}
           </select>
 
-          <button type="submit">Create Task</button>
+          <button type="submit" disabled={isCreatingTask}>
+            {isCreatingTask ? "Creating..." : "Create Task"}
+          </button>
         </form>
       </section>
 
       <h2>Upcoming Open Tasks</h2>
 
       <div className="task-list">
-        {tasks.map((task) => (
-          <div className="task-card" key={task.id}>
-            <h3>{task.title}</h3>
-            <p>{task.description}</p>
-            <p>
-              <strong>Course:</strong> {task.courseName}
-            </p>
-            <p>
-              <strong>Deadline:</strong> {task.deadline}
-            </p>
-            <p>
-              <strong>Status:</strong> {task.status}
-            </p>
+        {tasks.length === 0 && !isLoadingDashboard ? (
+          <p>No open tasks found.</p>
+        ) : (
+          tasks.map((task) => (
+            <div className="task-card" key={task.id}>
+              <h3>{task.title}</h3>
 
-            <div className="task-actions">
-              <button onClick={() => markTaskAsDone(task.id)}>
-                Mark as Done
-              </button>
+              <p>{task.description}</p>
 
-              <button className="delete-button" onClick={() => deleteTask(task.id)}>
-                Delete
-              </button>
+              <p>
+                <strong>Course:</strong> {task.courseName}
+              </p>
+
+              <p>
+                <strong>Deadline:</strong> {task.deadline}
+              </p>
+
+              <p>
+                <strong>Status:</strong> {task.status}
+              </p>
+
+              <div className="task-actions">
+                <button
+                  onClick={() => markTaskAsDone(task.id)}
+                  disabled={updatingTaskId === task.id}
+                >
+                  {updatingTaskId === task.id ? "Updating..." : "Mark as Done"}
+                </button>
+
+                <button
+                  className="delete-button"
+                  onClick={() => deleteTask(task.id)}
+                  disabled={deletingTaskId === task.id}
+                >
+                  {deletingTaskId === task.id ? "Deleting..." : "Delete"}
+                </button>
+              </div>
             </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
     </div>
   );

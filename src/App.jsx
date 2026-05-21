@@ -40,6 +40,20 @@ function App() {
       .catch((error) => console.error(error));
   };
 
+  const deleteTask = (taskId) => {
+    fetch(`http://localhost:8080/api/tasks/${taskId}`, {
+      method: "DELETE",
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Failed to delete task");
+        }
+
+        loadDashboard();
+      })
+      .catch((error) => console.error(error));
+  };
+
   return (
     <div className="app">
       <h1>StudyFlow</h1>
@@ -86,9 +100,15 @@ function App() {
               <strong>Status:</strong> {task.status}
             </p>
 
-            <button onClick={() => markTaskAsDone(task.id)}>
-              Mark as Done
-            </button>
+            <div className="task-actions">
+              <button onClick={() => markTaskAsDone(task.id)}>
+                Mark as Done
+              </button>
+
+              <button className="delete-button" onClick={() => deleteTask(task.id)}>
+                Delete
+              </button>
+            </div>
           </div>
         ))}
       </div>

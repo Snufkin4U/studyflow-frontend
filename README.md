@@ -26,6 +26,26 @@ The frontend allows users to:
 
 ---
 
+## Screenshots
+
+### Dashboard
+
+![Dashboard](docs/images/dashboard.png)
+
+### Course Progress
+
+![Course Progress](docs/images/course-progress.png)
+
+### Task Search, Filters and Sorting
+
+![Task Filters](docs/images/task-filters.png)
+
+### Edit Task
+
+![Edit Task](docs/images/edit-task.png)
+
+---
+
 ## Technologies Used
 
 * React

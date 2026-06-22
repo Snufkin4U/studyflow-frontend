@@ -45,6 +45,14 @@ function App() {
     difficulty: 3,
   });
 
+  const [taskFilters, setTaskFilters] = useState({
+    search: "",
+    status: "",
+    courseId: "",
+    sortBy: "deadline",
+    direction: "asc",
+  });
+
   const [newTask, setNewTask] = useState({
     title: "",
     description: "",
@@ -77,20 +85,15 @@ function App() {
     setIsLoadingDashboard(true);
 
     try {
-      const [summaryResponse, tasksResponse, coursesResponse, progressResponse] =
+      const [summaryResponse, coursesResponse, progressResponse] =
         await Promise.all([
           fetch(`${API_BASE_URL}/dashboard/summary`),
-          fetch(`${API_BASE_URL}/tasks?size=20&sortBy=deadline&direction=asc`),
           fetch(`${API_BASE_URL}/courses`),
           fetch(`${API_BASE_URL}/dashboard/courses`),
         ]);
 
       if (!summaryResponse.ok) {
         throw new Error("Failed to load dashboard summary");
-      }
-
-      if (!tasksResponse.ok) {
-        throw new Error("Failed to load tasks");
       }
 
       if (!coursesResponse.ok) {
@@ -102,16 +105,10 @@ function App() {
       }
 
       const summaryData = await summaryResponse.json();
-      const tasksData = await tasksResponse.json();
       const coursesData = await coursesResponse.json();
       const progressData = await progressResponse.json();
 
-      const openTasks = (tasksData.content ?? [])
-        .filter((task) => task.status !== "DONE")
-        .slice(0, 5);
-
       setSummary(summaryData);
-      setTasks(openTasks);
       setCourses(coursesData);
       setCourseProgress(progressData);
     } catch (error) {
@@ -122,9 +119,56 @@ function App() {
     }
   }, []);
 
+  const loadTasks = useCallback(async () => {
+    try {
+      const params = new URLSearchParams();
+
+      params.append("page", "0");
+      params.append("size", "20");
+
+      if (taskFilters.search.trim()) {
+        params.append("search", taskFilters.search.trim());
+      }
+
+      if (taskFilters.status) {
+        params.append("status", taskFilters.status);
+      }
+
+      if (taskFilters.courseId) {
+        params.append("courseId", taskFilters.courseId);
+      }
+
+      params.append("sortBy", taskFilters.sortBy);
+      params.append("direction", taskFilters.direction);
+
+      const response = await fetch(`${API_BASE_URL}/tasks?${params.toString()}`);
+
+      if (!response.ok) {
+        throw new Error("Failed to load tasks");
+      }
+
+      const data = await response.json();
+
+      const loadedTasks = data.content ?? data;
+
+      setTasks(
+        taskFilters.status
+          ? loadedTasks
+          : loadedTasks.filter((task) => task.status !== "DONE")
+      );
+    } catch (error) {
+      console.error(error);
+      showError("Could not load tasks.");
+    }
+  }, [taskFilters]);
+
   useEffect(() => {
     loadDashboard();
   }, [loadDashboard]);
+
+  useEffect(() => {
+    loadTasks();
+  }, [loadTasks]);
 
   const handleCourseInputChange = (event) => {
     const { name, value } = event.target;
@@ -142,6 +186,15 @@ function App() {
       ...newTask,
       [name]: value,
     });
+  };
+
+  const handleTaskFilterChange = (event) => {
+    const { name, value } = event.target;
+
+    setTaskFilters((previousFilters) => ({
+      ...previousFilters,
+      [name]: value,
+    }));
   };
 
   const createCourse = async (event) => {
@@ -184,6 +237,14 @@ function App() {
     }
   };
 
+  const showMessage = (type, text) => {
+    setMessage({ type, text });
+
+    setTimeout(() => {
+      setMessage(null);
+    }, 3000);
+  };
+
   const createTask = async (event) => {
     event.preventDefault();
     clearMessage();
@@ -221,6 +282,7 @@ function App() {
       });
 
       await loadDashboard();
+      await loadTasks();
       showSuccess("Task created successfully.");
     } catch (error) {
       console.error(error);
@@ -248,6 +310,7 @@ function App() {
       }
 
       await loadDashboard();
+      await loadTasks();
       showSuccess("Task marked as done.");
     } catch (error) {
       console.error(error);
@@ -272,6 +335,7 @@ function App() {
       }
 
       await loadDashboard();
+      await loadTasks();
       showSuccess("Task deleted successfully.");
     } catch (error) {
       console.error(error);
@@ -488,11 +552,68 @@ function App() {
         </form>
       </section>
 
-      <h2>Upcoming Open Tasks</h2>
+      <section className="task-filters-section">
+        <h2>Tasks</h2>
+
+        <div className="task-filters">
+          <input
+            type="text"
+            name="search"
+            placeholder="Search tasks..."
+            value={taskFilters.search}
+            onChange={handleTaskFilterChange}
+          />
+
+          <select
+            name="status"
+            value={taskFilters.status}
+            onChange={handleTaskFilterChange}
+          >
+            <option value="">Open tasks</option>
+            <option value="TODO">TODO</option>
+            <option value="IN_PROGRESS">IN_PROGRESS</option>
+            <option value="DONE">DONE</option>
+          </select>
+
+          <select
+            name="courseId"
+            value={taskFilters.courseId}
+            onChange={handleTaskFilterChange}
+          >
+            <option value="">All courses</option>
+
+            {courses.map((course) => (
+              <option key={course.id} value={course.id}>
+                {course.name}
+              </option>
+            ))}
+          </select>
+
+          <select
+            name="sortBy"
+            value={taskFilters.sortBy}
+            onChange={handleTaskFilterChange}
+          >
+            <option value="deadline">Deadline</option>
+            <option value="priority">Priority</option>
+            <option value="estimatedHours">Estimated Hours</option>
+            <option value="title">Title</option>
+          </select>
+
+          <select
+            name="direction"
+            value={taskFilters.direction}
+            onChange={handleTaskFilterChange}
+          >
+            <option value="asc">Ascending</option>
+            <option value="desc">Descending</option>
+          </select>
+        </div>
+      </section>
 
       <div className="task-list">
         {tasks.length === 0 && !isLoadingDashboard ? (
-          <p>No open tasks found.</p>
+          <p>No tasks found.</p>
         ) : (
           tasks.map((task) => (
             <div className="task-card" key={task.id}>

@@ -63,6 +63,18 @@ function App() {
     courseId: "",
   });
 
+  const [editingTaskId, setEditingTaskId] = useState(null);
+
+  const [editTaskForm, setEditTaskForm] = useState({
+    title: "",
+    description: "",
+    deadline: "",
+    estimatedHours: 1,
+    priority: 3,
+    status: "TODO",
+    courseId: "",
+  });
+
   const showSuccess = (text) => {
     setMessage({
       type: "success",
@@ -186,6 +198,81 @@ function App() {
       ...newTask,
       [name]: value,
     });
+  };
+
+  const startEditingTask = (task) => {
+    setEditingTaskId(task.id);
+
+    setEditTaskForm({
+      title: task.title,
+      description: task.description,
+      deadline: task.deadline,
+      estimatedHours: task.estimatedHours,
+      priority: task.priority,
+      status: task.status,
+      courseId: task.courseId || "",
+    });
+  };
+
+  const handleEditTaskInputChange = (event) => {
+    const { name, value } = event.target;
+
+    setEditTaskForm((previousForm) => ({
+      ...previousForm,
+      [name]: value,
+    }));
+  };
+
+  const cancelEditingTask = () => {
+    setEditingTaskId(null);
+
+    setEditTaskForm({
+      title: "",
+      description: "",
+      deadline: "",
+      estimatedHours: 1,
+      priority: 3,
+      status: "TODO",
+      courseId: "",
+    });
+  };
+
+  const updateTask = async (event) => {
+    event.preventDefault();
+    clearMessage();
+    setUpdatingTaskId(editingTaskId);
+
+    const taskToUpdate = {
+      ...editTaskForm,
+      estimatedHours: Number(editTaskForm.estimatedHours),
+      priority: Number(editTaskForm.priority),
+      courseId: Number(editTaskForm.courseId),
+    };
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/tasks/${editingTaskId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(taskToUpdate),
+      });
+
+      if (!response.ok) {
+        const errorMessage = await parseErrorResponse(response);
+        throw new Error(errorMessage);
+      }
+
+      cancelEditingTask();
+      await loadDashboard();
+      await loadTasks();
+      showSuccess("Task updated successfully.");
+    } catch (error) {
+      console.error(error);
+      showError(error.message || "Failed to update task.");
+    } finally {
+      setUpdatingTaskId(null);
+    }
   };
 
   const handleTaskFilterChange = (event) => {
@@ -617,38 +704,134 @@ function App() {
         ) : (
           tasks.map((task) => (
             <div className="task-card" key={task.id}>
-              <h3>{task.title}</h3>
+              {editingTaskId === task.id ? (
+                <form onSubmit={updateTask} className="edit-task-form">
+                  <input
+                    name="title"
+                    placeholder="Task title"
+                    value={editTaskForm.title}
+                    onChange={handleEditTaskInputChange}
+                    required
+                  />
 
-              <p>{task.description}</p>
+                  <input
+                    name="description"
+                    placeholder="Description"
+                    value={editTaskForm.description}
+                    onChange={handleEditTaskInputChange}
+                    required
+                  />
 
-              <p>
-                <strong>Course:</strong> {task.courseName}
-              </p>
+                  <input
+                    name="deadline"
+                    type="date"
+                    value={editTaskForm.deadline}
+                    onChange={handleEditTaskInputChange}
+                    required
+                  />
 
-              <p>
-                <strong>Deadline:</strong> {task.deadline}
-              </p>
+                  <input
+                    name="estimatedHours"
+                    type="number"
+                    min="0.5"
+                    step="0.5"
+                    value={editTaskForm.estimatedHours}
+                    onChange={handleEditTaskInputChange}
+                    required
+                  />
 
-              <p>
-                <strong>Status:</strong> {task.status}
-              </p>
+                  <input
+                    name="priority"
+                    type="number"
+                    min="1"
+                    max="5"
+                    value={editTaskForm.priority}
+                    onChange={handleEditTaskInputChange}
+                    required
+                  />
 
-              <div className="task-actions">
-                <button
-                  onClick={() => markTaskAsDone(task.id)}
-                  disabled={updatingTaskId === task.id}
-                >
-                  {updatingTaskId === task.id ? "Updating..." : "Mark as Done"}
-                </button>
+                  <select
+                    name="status"
+                    value={editTaskForm.status}
+                    onChange={handleEditTaskInputChange}
+                    required
+                  >
+                    <option value="TODO">TODO</option>
+                    <option value="IN_PROGRESS">IN_PROGRESS</option>
+                    <option value="DONE">DONE</option>
+                  </select>
 
-                <button
-                  className="delete-button"
-                  onClick={() => deleteTask(task.id)}
-                  disabled={deletingTaskId === task.id}
-                >
-                  {deletingTaskId === task.id ? "Deleting..." : "Delete"}
-                </button>
-              </div>
+                  <select
+                    name="courseId"
+                    value={editTaskForm.courseId}
+                    onChange={handleEditTaskInputChange}
+                    required
+                  >
+                    <option value="">Select course</option>
+
+                    {courses.map((course) => (
+                      <option key={course.id} value={course.id}>
+                        {course.name}
+                      </option>
+                    ))}
+                  </select>
+
+                  <div className="task-actions">
+                    <button type="submit" disabled={updatingTaskId === task.id}>
+                      {updatingTaskId === task.id ? "Saving..." : "Save Changes"}
+                    </button>
+
+                    <button type="button" onClick={cancelEditingTask}>
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <>
+                  <h3>{task.title}</h3>
+
+                  <p>{task.description}</p>
+
+                  <p>
+                    <strong>Course:</strong> {task.courseName}
+                  </p>
+
+                  <p>
+                    <strong>Deadline:</strong> {task.deadline}
+                  </p>
+
+                  <p>
+                    <strong>Status:</strong> {task.status}
+                  </p>
+
+                  <p>
+                    <strong>Estimated Hours:</strong> {task.estimatedHours}
+                  </p>
+
+                  <p>
+                    <strong>Priority:</strong> {task.priority}
+                  </p>
+
+                  <div className="task-actions">
+                    <button onClick={() => startEditingTask(task)}>Edit</button>
+
+                    <button
+                      onClick={() => markTaskAsDone(task.id)}
+                      disabled={updatingTaskId === task.id}
+                    >
+                      {updatingTaskId === task.id ? "Updating..." : "Mark as Done"}
+                    </button>
+
+                    <button
+                      className="delete-button"
+                      onClick={() => deleteTask(task.id)}
+                      disabled={deletingTaskId === task.id}
+                    >
+                      {deletingTaskId === task.id ? "Deleting..." : "Delete"}
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           ))
         )}

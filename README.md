@@ -8,6 +8,30 @@ The project is part of a full-stack portfolio application built with a Spring Bo
 
 ---
 
+## Live Demo
+
+Frontend:
+
+```text
+https://studyflow-frontend-rust.vercel.app
+```
+
+Backend API:
+
+```text
+https://studyflow-production-1e15.up.railway.app
+```
+
+Example API endpoints:
+
+```text
+https://studyflow-production-1e15.up.railway.app/api/courses
+https://studyflow-production-1e15.up.railway.app/api/tasks
+https://studyflow-production-1e15.up.railway.app/api/dashboard/summary
+```
+
+---
+
 ## Project Overview
 
 StudyFlow helps students organize their academic workload in one dashboard.

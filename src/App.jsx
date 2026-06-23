@@ -31,6 +31,10 @@ function App() {
   const [tasks, setTasks] = useState([]);
   const [courses, setCourses] = useState([]);
   const [courseProgress, setCourseProgress] = useState([]);
+  const [recommendedTasks, setRecommendedTasks] = useState([]);
+  const [dueSoonTasks, setDueSoonTasks] = useState([]);
+  const [overdueTasks, setOverdueTasks] = useState([]);
+  const [isLoadingInsights, setIsLoadingInsights] = useState(false);
   const [taskPage, setTaskPage] = useState(0);
   const [taskSize, setTaskSize] = useState(10);
   const [totalTaskPages, setTotalTaskPages] = useState(1);
@@ -198,6 +202,44 @@ function App() {
       }
     }, [taskFilters, taskPage, taskSize]);
 
+  const loadInsights = useCallback(async () => {
+    setIsLoadingInsights(true);
+
+    try {
+      const [recommendedResponse, dueSoonResponse, overdueResponse] =
+        await Promise.all([
+          fetch(`${API_BASE_URL}/tasks/recommended`),
+          fetch(`${API_BASE_URL}/tasks/due-soon?days=7`),
+          fetch(`${API_BASE_URL}/tasks/overdue`),
+        ]);
+
+      if (!recommendedResponse.ok) {
+        throw new Error("Failed to load recommended tasks");
+      }
+
+      if (!dueSoonResponse.ok) {
+        throw new Error("Failed to load due soon tasks");
+      }
+
+      if (!overdueResponse.ok) {
+        throw new Error("Failed to load overdue tasks");
+      }
+
+      const recommendedData = await recommendedResponse.json();
+      const dueSoonData = await dueSoonResponse.json();
+      const overdueData = await overdueResponse.json();
+
+      setRecommendedTasks(recommendedData.content ?? recommendedData);
+      setDueSoonTasks(dueSoonData.content ?? dueSoonData);
+      setOverdueTasks(overdueData.content ?? overdueData);
+    } catch (error) {
+      console.error(error);
+      showError("Could not load smart insights.");
+    } finally {
+      setIsLoadingInsights(false);
+    }
+  }, []);
+
   useEffect(() => {
     loadDashboard();
   }, [loadDashboard]);
@@ -205,6 +247,10 @@ function App() {
   useEffect(() => {
     loadTasks();
   }, [loadTasks]);
+
+  useEffect(() => {
+    loadInsights();
+  }, [loadInsights]);
 
   const handleCourseInputChange = (event) => {
     const { name, value } = event.target;
@@ -239,6 +285,8 @@ function App() {
 
       await loadDashboard();
       await loadTasks();
+      await loadInsights();
+      showSuccess("Task created successfully.");
 
       showSuccess("Course deleted successfully.");
     } catch (error) {
@@ -709,6 +757,64 @@ function App() {
           </div>
         </div>
       )}
+
+      <section className="insights-section">
+        <h2>Smart Insights</h2>
+
+        {isLoadingInsights ? (
+          <p className="loading-message dark">Loading smart insights...</p>
+        ) : (
+          <div className="insights-grid">
+            <div className="insight-card recommended">
+              <span className="insight-label">Recommended</span>
+
+              {recommendedTasks.length === 0 ? (
+                <p>No recommended tasks yet.</p>
+              ) : (
+                <>
+                  <h3>{recommendedTasks[0].title}</h3>
+                  <p>{recommendedTasks[0].description}</p>
+                  <small>
+                    {recommendedTasks[0].courseName} · {recommendedTasks[0].deadline}
+                  </small>
+                </>
+              )}
+            </div>
+
+            <div className="insight-card due-soon">
+              <span className="insight-label">Due Soon</span>
+
+              {dueSoonTasks.length === 0 ? (
+                <p>No tasks due soon.</p>
+              ) : (
+                <>
+                  <h3>{dueSoonTasks[0].title}</h3>
+                  <p>{dueSoonTasks[0].description}</p>
+                  <small>
+                    {dueSoonTasks[0].courseName} · {dueSoonTasks[0].deadline}
+                  </small>
+                </>
+              )}
+            </div>
+
+            <div className="insight-card overdue">
+              <span className="insight-label">Overdue</span>
+
+              {overdueTasks.length === 0 ? (
+                <p>No overdue tasks.</p>
+              ) : (
+                <>
+                  <h3>{overdueTasks[0].title}</h3>
+                  <p>{overdueTasks[0].description}</p>
+                  <small>
+                    {overdueTasks[0].courseName} · {overdueTasks[0].deadline}
+                  </small>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+      </section>
 
       <section className="course-progress-section">
         <h2>Course Progress</h2>

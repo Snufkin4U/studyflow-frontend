@@ -26,6 +26,16 @@ async function parseErrorResponse(response) {
   }
 }
 
+function EmptyState({ icon, title, description }) {
+  return (
+    <div className="empty-state">
+      <div className="empty-state-icon">{icon}</div>
+      <h3>{title}</h3>
+      <p>{description}</p>
+    </div>
+  );
+}
+
 function App() {
   const [summary, setSummary] = useState(null);
   const [tasks, setTasks] = useState([]);
@@ -854,7 +864,11 @@ function App() {
         <h2>Course Progress</h2>
 
         {courseProgress.length === 0 && !isLoadingDashboard ? (
-          <p>No course progress data yet.</p>
+          <EmptyState
+            icon="📊"
+            title="No course progress yet"
+            description="Create courses and tasks to start tracking academic progress."
+          />
         ) : (
           <div className="course-progress-grid">
             {courseProgress.map((course) => {
@@ -942,7 +956,11 @@ function App() {
         <h2>Courses</h2>
 
         {courses.length === 0 && !isLoadingDashboard ? (
-          <p>No courses found.</p>
+          <EmptyState
+            icon="🎓"
+            title="No courses yet"
+            description="Create your first course to organize your academic workload."
+          />
         ) : (
           <div className="course-progress-grid">
             {courses.map((course) => (
@@ -1190,7 +1208,11 @@ function App() {
 
       <div className="task-list">
         {tasks.length === 0 && !isLoadingTasks ? (
-          <p>No tasks found.</p>
+          <EmptyState
+            icon="✅"
+            title="No tasks found"
+            description="Create a new task or adjust your filters to see more results."
+          />
         ) : (
           tasks.map((task) => (
             <div className="task-card" key={task.id}>

@@ -39,6 +39,15 @@ function App() {
   const [isCreatingTask, setIsCreatingTask] = useState(false);
   const [updatingTaskId, setUpdatingTaskId] = useState(null);
   const [deletingTaskId, setDeletingTaskId] = useState(null);
+  const [deletingCourseId, setDeletingCourseId] = useState(null);
+  const [editingCourseId, setEditingCourseId] = useState(null);
+  const [updatingCourseId, setUpdatingCourseId] = useState(null);
+
+  const [editCourseForm, setEditCourseForm] = useState({
+    name: "",
+    semester: "",
+    difficulty: 3,
+  });
 
   const [newCourse, setNewCourse] = useState({
     name: "",
@@ -190,6 +199,106 @@ function App() {
       ...newCourse,
       [name]: value,
     });
+  };
+
+  const handleDeleteCourse = async (courseId) => {
+    const confirmDelete = window.confirm(
+      "Are you sure you want to delete this course?"
+    );
+
+    if (!confirmDelete) {
+      return;
+    }
+
+    clearMessage();
+    setDeletingCourseId(courseId);
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/courses/${courseId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        const errorMessage = await parseErrorResponse(response);
+        throw new Error(errorMessage);
+      }
+
+      await loadDashboard();
+      await loadTasks();
+
+      showSuccess("Course deleted successfully.");
+    } catch (error) {
+      console.error(error);
+      showError(error.message || "Failed to delete course.");
+    } finally {
+      setDeletingCourseId(null);
+    }
+  };
+
+  const startEditingCourse = (course) => {
+    setEditingCourseId(course.id);
+
+    setEditCourseForm({
+      name: course.name,
+      semester: course.semester,
+      difficulty: course.difficulty,
+    });
+  };
+
+  const handleEditCourseInputChange = (event) => {
+    const { name, value } = event.target;
+
+    setEditCourseForm((previousForm) => ({
+      ...previousForm,
+      [name]: value,
+    }));
+  };
+
+  const cancelEditingCourse = () => {
+    setEditingCourseId(null);
+
+    setEditCourseForm({
+      name: "",
+      semester: "",
+      difficulty: 3,
+    });
+  };
+
+  const updateCourse = async (event) => {
+    event.preventDefault();
+    clearMessage();
+    setUpdatingCourseId(editingCourseId);
+
+    const courseToUpdate = {
+      ...editCourseForm,
+      difficulty: Number(editCourseForm.difficulty),
+    };
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/courses/${editingCourseId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(courseToUpdate),
+      });
+
+      if (!response.ok) {
+        const errorMessage = await parseErrorResponse(response);
+        throw new Error(errorMessage);
+      }
+
+      cancelEditingCourse();
+      await loadDashboard();
+      await loadTasks();
+
+      showSuccess("Course updated successfully.");
+    } catch (error) {
+      console.error(error);
+      showError(error.message || "Failed to update course.");
+    } finally {
+      setUpdatingCourseId(null);
+    }
   };
 
   const handleTaskInputChange = (event) => {
@@ -561,6 +670,87 @@ function App() {
             {isCreatingCourse ? "Creating..." : "Create Course"}
           </button>
         </form>
+      </section>
+
+      <section className="courses-section">
+        <h2>Courses</h2>
+
+        {courses.length === 0 && !isLoadingDashboard ? (
+          <p>No courses found.</p>
+        ) : (
+          <div className="course-progress-grid">
+            {courses.map((course) => (
+              <div className="course-progress-card" key={course.id}>
+                {editingCourseId === course.id ? (
+                  <form onSubmit={updateCourse} className="edit-task-form">
+                    <input
+                      name="name"
+                      placeholder="Course name"
+                      value={editCourseForm.name}
+                      onChange={handleEditCourseInputChange}
+                      required
+                    />
+
+                    <input
+                      name="semester"
+                      placeholder="Semester"
+                      value={editCourseForm.semester}
+                      onChange={handleEditCourseInputChange}
+                      required
+                    />
+
+                    <input
+                      name="difficulty"
+                      type="number"
+                      min="1"
+                      max="5"
+                      value={editCourseForm.difficulty}
+                      onChange={handleEditCourseInputChange}
+                      required
+                    />
+
+                    <div className="task-actions">
+                      <button type="submit" disabled={updatingCourseId === course.id}>
+                        {updatingCourseId === course.id ? "Saving..." : "Save Changes"}
+                      </button>
+
+                      <button type="button" onClick={cancelEditingCourse}>
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                ) : (
+                  <>
+                    <h3>{course.name}</h3>
+
+                    <p>
+                      <strong>Semester:</strong> {course.semester}
+                    </p>
+
+                    <p>
+                      <strong>Difficulty:</strong> {course.difficulty}
+                    </p>
+
+                    <div className="task-actions">
+                      <button type="button" onClick={() => startEditingCourse(course)}>
+                        Edit
+                      </button>
+
+                      <button
+                        type="button"
+                        className="delete-button"
+                        onClick={() => handleDeleteCourse(course.id)}
+                        disabled={deletingCourseId === course.id}
+                      >
+                        {deletingCourseId === course.id ? "Deleting..." : "Delete"}
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       <section className="form-section">

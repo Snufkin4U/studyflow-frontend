@@ -31,6 +31,10 @@ function App() {
   const [tasks, setTasks] = useState([]);
   const [courses, setCourses] = useState([]);
   const [courseProgress, setCourseProgress] = useState([]);
+  const [taskPage, setTaskPage] = useState(0);
+  const [taskSize, setTaskSize] = useState(10);
+  const [totalTaskPages, setTotalTaskPages] = useState(1);
+  const [totalTaskElements, setTotalTaskElements] = useState(0);
 
   const [message, setMessage] = useState(null);
 
@@ -145,8 +149,8 @@ function App() {
     try {
       const params = new URLSearchParams();
 
-      params.append("page", "0");
-      params.append("size", "20");
+      params.append("page", taskPage.toString());
+      params.append("size", taskSize.toString());
 
       if (taskFilters.search.trim()) {
         params.append("search", taskFilters.search.trim());
@@ -173,6 +177,9 @@ function App() {
 
       const loadedTasks = data.content ?? data;
 
+      setTotalTaskPages(data.totalPages ?? 1);
+      setTotalTaskElements(data.totalElements ?? loadedTasks.length);
+
       setTasks(
         taskFilters.status
           ? loadedTasks
@@ -182,7 +189,7 @@ function App() {
       console.error(error);
       showError("Could not load tasks.");
     }
-  }, [taskFilters]);
+  }, [taskFilters, taskPage, taskSize]);
 
   useEffect(() => {
     loadDashboard();
@@ -388,10 +395,27 @@ function App() {
   const handleTaskFilterChange = (event) => {
     const { name, value } = event.target;
 
+    setTaskPage(0);
+
     setTaskFilters((previousFilters) => ({
       ...previousFilters,
       [name]: value,
     }));
+  };
+
+  const goToPreviousTaskPage = () => {
+    setTaskPage((previousPage) => Math.max(previousPage - 1, 0));
+  };
+
+  const goToNextTaskPage = () => {
+    setTaskPage((previousPage) =>
+      Math.min(previousPage + 1, totalTaskPages - 1)
+    );
+  };
+
+  const handleTaskSizeChange = (event) => {
+    setTaskPage(0);
+    setTaskSize(Number(event.target.value));
   };
 
   const createCourse = async (event) => {
@@ -885,6 +909,35 @@ function App() {
           >
             <option value="asc">Ascending</option>
             <option value="desc">Descending</option>
+          </select>
+        </div>
+        <div className="task-actions">
+          <button
+            type="button"
+            onClick={goToPreviousTaskPage}
+            disabled={taskPage === 0}
+          >
+            Previous
+          </button>
+
+          <span>
+            Page {taskPage + 1} of {totalTaskPages} | Total tasks:{" "}
+            {totalTaskElements}
+          </span>
+
+          <button
+            type="button"
+            onClick={goToNextTaskPage}
+            disabled={taskPage + 1 >= totalTaskPages}
+          >
+            Next
+          </button>
+
+          <select value={taskSize} onChange={handleTaskSizeChange}>
+            <option value="5">5 per page</option>
+            <option value="10">10 per page</option>
+            <option value="20">20 per page</option>
+            <option value="50">50 per page</option>
           </select>
         </div>
       </section>

@@ -39,6 +39,7 @@ function App() {
   const [message, setMessage] = useState(null);
 
   const [isLoadingDashboard, setIsLoadingDashboard] = useState(false);
+  const [isLoadingTasks, setIsLoadingTasks] = useState(false);
   const [isCreatingCourse, setIsCreatingCourse] = useState(false);
   const [isCreatingTask, setIsCreatingTask] = useState(false);
   const [updatingTaskId, setUpdatingTaskId] = useState(null);
@@ -89,18 +90,20 @@ function App() {
     courseId: "",
   });
 
+  const showMessage = (type, text) => {
+    setMessage({ type, text });
+
+    setTimeout(() => {
+      setMessage(null);
+    }, 3000);
+  };
+
   const showSuccess = (text) => {
-    setMessage({
-      type: "success",
-      text,
-    });
+    showMessage("success", text);
   };
 
   const showError = (text) => {
-    setMessage({
-      type: "error",
-      text,
-    });
+    showMessage("error", text);
   };
 
   const clearMessage = () => {
@@ -146,6 +149,8 @@ function App() {
   }, []);
 
   const loadTasks = useCallback(async () => {
+      setIsLoadingTasks(true);
+
     try {
       const params = new URLSearchParams();
 
@@ -185,11 +190,13 @@ function App() {
           ? loadedTasks
           : loadedTasks.filter((task) => task.status !== "DONE")
       );
-    } catch (error) {
-      console.error(error);
-      showError("Could not load tasks.");
-    }
-  }, [taskFilters, taskPage, taskSize]);
+      } catch (error) {
+        console.error(error);
+        showError("Could not load tasks.");
+      } finally {
+        setIsLoadingTasks(false);
+      }
+    }, [taskFilters, taskPage, taskSize]);
 
   useEffect(() => {
     loadDashboard();
@@ -456,14 +463,6 @@ function App() {
     } finally {
       setIsCreatingCourse(false);
     }
-  };
-
-  const showMessage = (type, text) => {
-    setMessage({ type, text });
-
-    setTimeout(() => {
-      setMessage(null);
-    }, 3000);
   };
 
   const createTask = async (event) => {
@@ -915,7 +914,7 @@ function App() {
           <button
             type="button"
             onClick={goToPreviousTaskPage}
-            disabled={taskPage === 0}
+            disabled={isLoadingTasks || taskPage === 0}
           >
             Previous
           </button>
@@ -928,12 +927,12 @@ function App() {
           <button
             type="button"
             onClick={goToNextTaskPage}
-            disabled={taskPage + 1 >= totalTaskPages}
+            disabled={isLoadingTasks || taskPage + 1 >= totalTaskPages}
           >
             Next
           </button>
 
-          <select value={taskSize} onChange={handleTaskSizeChange}>
+          <select value={taskSize} onChange={handleTaskSizeChange} disabled={isLoadingTasks}>
             <option value="5">5 per page</option>
             <option value="10">10 per page</option>
             <option value="20">20 per page</option>
@@ -942,8 +941,12 @@ function App() {
         </div>
       </section>
 
+      {isLoadingTasks && (
+        <p className="loading-message">Loading tasks...</p>
+      )}
+
       <div className="task-list">
-        {tasks.length === 0 && !isLoadingDashboard ? (
+        {tasks.length === 0 && !isLoadingTasks ? (
           <p>No tasks found.</p>
         ) : (
           tasks.map((task) => (

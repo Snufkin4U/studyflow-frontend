@@ -565,6 +565,94 @@ function App() {
     }
   };
 
+  const getPriorityLabel = (priority) => {
+    const numericPriority = Number(priority);
+
+    if (numericPriority >= 5) {
+      return "High";
+    }
+
+    if (numericPriority >= 3) {
+      return "Medium";
+    }
+
+    return "Low";
+  };
+
+  const getPriorityClass = (priority) => {
+    const numericPriority = Number(priority);
+
+    if (numericPriority >= 5) {
+      return "high";
+    }
+
+    if (numericPriority >= 3) {
+      return "medium";
+    }
+
+    return "low";
+  };
+
+  const getStatusClass = (status) => {
+    return status.toLowerCase().replace("_", "-");
+  };
+
+  const getDaysUntilDeadline = (deadline) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const dueDate = new Date(`${deadline}T00:00:00`);
+    dueDate.setHours(0, 0, 0, 0);
+
+    const differenceInMilliseconds = dueDate.getTime() - today.getTime();
+
+    return Math.ceil(differenceInMilliseconds / (1000 * 60 * 60 * 24));
+  };
+
+  const getDueDateLabel = (deadline) => {
+    const daysUntilDeadline = getDaysUntilDeadline(deadline);
+
+    if (Number.isNaN(daysUntilDeadline)) {
+      return "No Date";
+    }
+
+    if (daysUntilDeadline < 0) {
+      return "Overdue";
+    }
+
+    if (daysUntilDeadline === 0) {
+      return "Due Today";
+    }
+
+    if (daysUntilDeadline <= 3) {
+      return "Due Soon";
+    }
+
+    return "Upcoming";
+  };
+
+  const getDueDateClass = (deadline) => {
+    const daysUntilDeadline = getDaysUntilDeadline(deadline);
+
+    if (Number.isNaN(daysUntilDeadline)) {
+      return "no-date";
+    }
+
+    if (daysUntilDeadline < 0) {
+      return "overdue";
+    }
+
+    if (daysUntilDeadline === 0) {
+      return "today";
+    }
+
+    if (daysUntilDeadline <= 3) {
+      return "soon";
+    }
+
+    return "upcoming";
+  };
+
   return (
     <div className="app">
       <div className="hero">
@@ -1058,20 +1146,24 @@ function App() {
                     <strong>Course:</strong> {task.courseName}
                   </p>
 
-                  <p>
-                    <strong>Deadline:</strong> {task.deadline}
-                  </p>
+                 <div className="due-date-row">
+                   <span className={`due-date-badge due-date-${getDueDateClass(task.deadline)}`}>
+                     {getDueDateLabel(task.deadline)} · {task.deadline}
+                   </span>
+                 </div>
 
-                  <p>
-                    <strong>Status:</strong> {task.status}
-                  </p>
+                  <div className="task-meta">
+                    <span className={`status-badge status-${getStatusClass(task.status)}`}>
+                      {task.status}
+                    </span>
+
+                    <span className={`priority-badge priority-${getPriorityClass(task.priority)}`}>
+                      Priority: {getPriorityLabel(task.priority)}
+                    </span>
+                  </div>
 
                   <p>
                     <strong>Estimated Hours:</strong> {task.estimatedHours}
-                  </p>
-
-                  <p>
-                    <strong>Priority:</strong> {task.priority}
                   </p>
 
                   <div className="task-actions">

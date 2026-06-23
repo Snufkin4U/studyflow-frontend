@@ -1330,7 +1330,34 @@ function App() {
           ))
         )}
       </div>
-    </div>
+      <footer className="app-footer">
+            <div className="footer-content">
+              <div>
+                <h2>StudyFlow</h2>
+                <p>
+                  Full Stack academic planning system built with Spring Boot, React,
+                  PostgreSQL and cloud deployment.
+                </p>
+              </div>
+
+        <div className="footer-stack">
+          <span>Java</span>
+          <span>Spring Boot</span>
+          <span>React</span>
+          <span>Vite</span>
+          <span>PostgreSQL</span>
+          <span>Railway</span>
+          <span>Vercel</span>
+          <span>GitHub Actions</span>
+        </div>
+      </div>
+
+      <div className="footer-bottom">
+        <span>Built as a portfolio project by Maor Cohen</span>
+        <span>StudyFlow © 2026</span>
+      </div>
+    </footer>
+   </div>
   );
 }
 

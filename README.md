@@ -2,7 +2,7 @@
 
 ![Frontend CI](https://github.com/Snufkin4U/studyflow-frontend/actions/workflows/ci.yml/badge.svg)
 
-StudyFlow Frontend is a React application for managing academic courses and study tasks.
+StudyFlow Frontend is a React/Vite application for managing academic courses, study tasks, progress tracking and academic workload planning.
 
 The project is part of a full-stack portfolio application built with a Spring Boot backend and a React frontend.
 
@@ -22,6 +22,12 @@ Backend API:
 https://studyflow-production-1e15.up.railway.app
 ```
 
+Swagger API Documentation:
+
+```text
+https://studyflow-production-1e15.up.railway.app/swagger-ui.html
+```
+
 Example API endpoints:
 
 ```text
@@ -34,39 +40,9 @@ https://studyflow-production-1e15.up.railway.app/api/dashboard/summary
 
 ## Project Overview
 
-StudyFlow helps students organize their academic workload in one dashboard.
+StudyFlow helps students organize their academic workload in one modern dashboard.
 
-The frontend allows users to:
-
-* View dashboard statistics
-* Track course progress
-* Create academic courses
-* Create study tasks
-* Edit existing tasks
-* Mark tasks as done
-* Delete tasks
-* Search and filter tasks
-* Sort tasks by different fields
-
----
-
-## Screenshots
-
-### Dashboard
-
-![Dashboard](docs/images/dashboard.png)
-
-### Course Progress
-
-![Course Progress](docs/images/course-progress.png)
-
-### Task Search, Filters and Sorting
-
-![Task Filters](docs/images/task-filters.png)
-
-### Edit Task
-
-![Edit Task](docs/images/edit-task.png)
+The frontend allows users to manage courses and tasks, track course progress, filter and sort tasks, view smart task insights, and monitor study workload through a responsive UI.
 
 ---
 
@@ -77,13 +53,60 @@ The frontend allows users to:
 * JavaScript
 * CSS
 * Fetch API
+* Vercel
 * GitHub Actions CI
 
 ---
 
 ## Main Features
 
-### Dashboard Summary
+* Live dashboard summary with total courses, total tasks, open tasks and open study hours
+* Course progress tracking with completion percentage and remaining estimated hours
+* Full Course CRUD from the UI:
+
+    * Create course
+    * View courses
+    * Edit course
+    * Delete course
+* Full Task CRUD from the UI:
+
+    * Create task
+    * View tasks
+    * Edit task
+    * Mark task as done
+    * Delete task
+* Task filtering by:
+
+    * Search text
+    * Status
+    * Course
+* Task sorting by:
+
+    * Deadline
+    * Priority
+    * Estimated hours
+    * Title
+* Sort direction control:
+
+    * Ascending
+    * Descending
+* Task pagination controls
+* Smart Insights section:
+
+    * Recommended task
+    * Due soon task
+    * Overdue task
+* Status, priority and due date badges
+* Polished empty states
+* Loading states for dashboard, tasks and insights
+* Success and error messages
+* Responsive glassmorphism UI
+* Portfolio links to GitHub, Swagger and Live API
+* Professional footer with technology stack
+
+---
+
+## Dashboard Summary
 
 The top dashboard cards display:
 
@@ -95,12 +118,12 @@ The top dashboard cards display:
 Data is loaded from:
 
 ```http
-GET http://localhost:8080/api/dashboard/summary
+GET /api/dashboard/summary
 ```
 
 ---
 
-### Course Progress
+## Course Progress
 
 The Course Progress section displays progress for each course.
 
@@ -116,14 +139,14 @@ Each course card includes:
 Data is loaded from:
 
 ```http
-GET http://localhost:8080/api/dashboard/courses
+GET /api/dashboard/courses
 ```
 
 ---
 
-### Create Course
+## Course Management
 
-Users can create a new course using a form.
+Users can fully manage academic courses from the UI.
 
 Course fields:
 
@@ -131,19 +154,22 @@ Course fields:
 * Semester
 * Difficulty
 
-The form sends a request to:
+Supported actions:
 
 ```http
-POST http://localhost:8080/api/courses
+GET    /api/courses
+POST   /api/courses
+PUT    /api/courses/{id}
+DELETE /api/courses/{id}
 ```
 
-After creating a course, the course list is refreshed and the new course becomes available in the task creation form.
+After creating, editing or deleting a course, the dashboard, course list, course progress and task-related data are refreshed.
 
 ---
 
-### Create Task
+## Task Management
 
-Users can create a new academic task using a form.
+Users can fully manage academic tasks from the UI.
 
 Task fields:
 
@@ -152,127 +178,106 @@ Task fields:
 * Deadline
 * Estimated hours
 * Priority
+* Status
 * Course
 
-The form sends a request to:
+Supported actions:
 
 ```http
-POST http://localhost:8080/api/tasks
+GET    /api/tasks
+POST   /api/tasks
+PUT    /api/tasks/{id}
+PUT    /api/tasks/{id}/status?status=DONE
+DELETE /api/tasks/{id}
 ```
 
-After creating a task, the dashboard, course progress, and task list are refreshed.
+After creating, editing, completing or deleting a task, the dashboard, course progress, task list and smart insights are refreshed.
 
 ---
 
-### Task List
+## Task Search, Filter, Sort and Pagination
 
-The task list displays academic tasks as cards.
-
-Each task card shows:
-
-* Title
-* Description
-* Course
-* Deadline
-* Status
-* Estimated hours
-* Priority
-
----
-
-### Task Search, Filter and Sort
-
-The frontend supports task filtering through the backend API.
+The frontend supports task search, filtering, sorting and pagination through the backend API.
 
 Users can:
 
 * Search tasks by text
-* Filter by status
-* Filter by course
-* Sort by deadline
-* Sort by priority
-* Sort by estimated hours
-* Sort by title
-* Change sort direction between ascending and descending
+* Filter tasks by status
+* Filter tasks by course
+* Sort tasks by deadline
+* Sort tasks by priority
+* Sort tasks by estimated hours
+* Sort tasks by title
+* Change sort direction
+* Navigate between pages
+* Change page size
 
 Data is loaded from:
 
 ```http
-GET http://localhost:8080/api/tasks
+GET /api/tasks
 ```
 
 Example request:
 
 ```http
-GET http://localhost:8080/api/tasks?status=TODO&courseId=1&search=exam&sortBy=deadline&direction=asc&page=0&size=20
+GET /api/tasks?status=TODO&courseId=1&search=exam&sortBy=deadline&direction=asc&page=0&size=10
 ```
 
 ---
 
-### Edit Task
+## Smart Insights
 
-Users can edit an existing task directly from the task card.
+The Smart Insights section highlights important tasks from the backend.
 
-Editable fields:
+It displays:
 
-* Title
-* Description
-* Deadline
-* Estimated hours
-* Priority
-* Status
-* Course
+* Recommended task
+* Due soon task
+* Overdue task
 
-The update request is sent to:
+Data is loaded from:
 
 ```http
-PUT http://localhost:8080/api/tasks/{id}
+GET /api/tasks/recommended
+GET /api/tasks/due-soon?days=7
+GET /api/tasks/overdue
 ```
-
-After saving changes, the dashboard and task list are refreshed.
 
 ---
 
-### Mark Task as Done
+## UI and User Experience
 
-Users can mark an open task as completed.
+The frontend includes several UI improvements:
 
-The request is sent to:
-
-```http
-PUT http://localhost:8080/api/tasks/{id}/status?status=DONE
-```
-
-After marking a task as done:
-
-* The task list is refreshed
-* Dashboard statistics are updated
-* Course progress is recalculated
-
----
-
-### Delete Task
-
-Users can delete a task from the system.
-
-The request is sent to:
-
-```http
-DELETE http://localhost:8080/api/tasks/{id}
-```
-
-After deletion, the dashboard and task list are refreshed.
+* Modern glassmorphism layout
+* Responsive design for desktop and mobile
+* Hero section with project badges
+* Project links section
+* Smart insights cards
+* Status badges
+* Priority badges
+* Due date badges
+* Polished empty states
+* Professional footer with technology stack
+* Clear loading, success and error states
 
 ---
 
 ## Backend Dependency
 
-This frontend requires the StudyFlow backend to be running locally.
+This frontend communicates with the StudyFlow backend.
 
 Backend repository:
 
 ```text
 https://github.com/Snufkin4U/studyflow
+```
+
+Backend production URL:
+
+```text
+https://studyflow-production-1e15.up.railway.app
 ```
 
 Backend local URL:
@@ -281,10 +286,23 @@ Backend local URL:
 http://localhost:8080
 ```
 
-The frontend communicates with the backend using:
+The frontend uses an environment-based API URL:
 
 ```javascript
-const API_BASE_URL = "http://localhost:8080/api";
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api";
+```
+
+For local development with the production backend, create a `.env` file:
+
+```env
+VITE_API_BASE_URL=https://studyflow-production-1e15.up.railway.app/api
+```
+
+For local development with a local backend, no `.env` file is required as long as the backend runs on:
+
+```text
+http://localhost:8080
 ```
 
 ---
@@ -371,6 +389,24 @@ This verifies that the frontend builds successfully after each change.
 
 ---
 
+## Deployment
+
+The frontend is deployed on Vercel.
+
+Production frontend:
+
+```text
+https://studyflow-frontend-rust.vercel.app
+```
+
+The production frontend connects to the Railway backend using:
+
+```env
+VITE_API_BASE_URL=https://studyflow-production-1e15.up.railway.app/api
+```
+
+---
+
 ## Related Repository
 
 Backend repository:
@@ -388,18 +424,25 @@ Completed frontend features:
 * Dashboard summary cards
 * Course progress cards
 * Progress bar per course
-* Create course form
-* Create task form
-* Task list
+* Full Course CRUD
+* Full Task CRUD
 * Task search
 * Task status filter
 * Task course filter
 * Task sorting
-* Edit task
-* Mark task as done
-* Delete task
-* Responsive CSS layout
+* Task pagination
+* Smart Insights section
+* Status badges
+* Priority badges
+* Due date badges
+* Loading states
+* Success and error messages
+* Polished empty states
+* Responsive glassmorphism UI
+* Project links
+* Professional footer
 * GitHub Actions CI
+* Vercel deployment
 
 ---
 
@@ -407,14 +450,15 @@ Completed frontend features:
 
 Possible future improvements:
 
-* Edit course support
-* Delete course support from the UI
-* Pagination controls in the frontend
-* Better success and error message handling
-* Better loading states
-* Authentication pages
-* Deployment
-* Screenshots in README
+* Authentication and user accounts
+* Dark/light theme toggle
+* Task categories or labels
+* Calendar view for deadlines
+* Drag-and-drop task board
+* Better analytics charts
+* Export tasks to CSV
+* Custom domain
+* End-to-end tests
 
 ---
 

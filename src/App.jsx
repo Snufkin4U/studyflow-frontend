@@ -721,6 +721,40 @@ function App() {
         </div>
       </div>
 
+      <section className="project-links-section">
+        <a
+          href="https://github.com/Snufkin4U/studyflow"
+          target="_blank"
+          rel="noreferrer"
+        >
+          Backend GitHub
+        </a>
+
+        <a
+          href="https://github.com/Snufkin4U/studyflow-frontend"
+          target="_blank"
+          rel="noreferrer"
+        >
+          Frontend GitHub
+        </a>
+
+        <a
+          href="https://studyflow-production-1e15.up.railway.app/swagger-ui.html"
+          target="_blank"
+          rel="noreferrer"
+        >
+          Swagger API
+        </a>
+
+        <a
+          href="https://studyflow-production-1e15.up.railway.app/api/courses"
+          target="_blank"
+          rel="noreferrer"
+        >
+          Live API
+        </a>
+      </section>
+
       {message && (
         <div className={`alert alert-${message.type}`} role="alert">
           <span>{message.text}</span>

@@ -567,8 +567,23 @@ function App() {
 
   return (
     <div className="app">
-      <h1>StudyFlow</h1>
-      <p className="subtitle">Smart academic planner dashboard</p>
+      <div className="hero">
+        <div className="hero-label">Full Stack Portfolio Project</div>
+
+        <h1>StudyFlow</h1>
+
+        <p className="subtitle">
+          Smart academic planner dashboard for courses, tasks, progress tracking,
+          filters and study workload management.
+        </p>
+
+        <div className="hero-badges">
+          <span>Spring Boot API</span>
+          <span>React Frontend</span>
+          <span>PostgreSQL</span>
+          <span>Live Deployment</span>
+        </div>
+      </div>
 
       {message && (
         <div className={`alert alert-${message.type}`} role="alert">

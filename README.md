@@ -389,6 +389,66 @@ This verifies that the frontend builds successfully after each change.
 
 ---
 
+## Docker
+
+The frontend uses a multi-stage Docker build:
+
+1. Node.js installs dependencies and creates the Vite production build.
+2. Nginx serves the generated static files.
+3. Nginx forwards `/api` requests to the Spring Boot backend.
+
+### Nginx Routing
+
+```text
+/              -> React application
+/api/*         -> Spring Boot backend
+/swagger-ui/*  -> Swagger UI
+/v3/api-docs   -> OpenAPI documentation
+```
+
+The complete system should be started through the backend repository's Docker Compose configuration.
+
+Expected directory structure:
+
+```text
+Projects/
+├── studyflow/
+└── studyflow-frontend/
+```
+
+Start the complete system from the backend directory:
+
+```bash
+cd ../studyflow
+docker compose up -d --build
+```
+
+Frontend:
+
+```text
+http://localhost:5173
+```
+
+API through Nginx:
+
+```text
+http://localhost:5173/api/courses
+```
+
+Swagger through Nginx:
+
+```text
+http://localhost:5173/swagger-ui.html
+```
+
+Stop the system:
+
+```bash
+docker compose down
+```
+
+---
+
 ## Deployment
 
 The frontend is deployed on Vercel.
